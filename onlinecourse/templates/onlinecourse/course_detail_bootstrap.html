@@ -54,14 +54,50 @@
             <!-- <HINT> Use Bootstrap Collapse to hide exam first, more details could be found here
             https://www.w3schools.com/bootstrap4/bootstrap_collapse.asp-->
 
-            <!--
+             <!--A collapse example here: -->
+             {% if user.is_authenticated %}
+             <div class="card-columns-vertical">
+                <div class="card-header">
+                  
+                    <a class="btn btn-block btn-info" data-toggle="collapse" href="#exam1" value="EXAM">
+                        <!-- card-link-->
+                        <h2>Exam for Course</h2  > 
+                    </a>
 
-            A collapse example here:
-            <div id="exam" class="collapse">
-                Click to expand elements within the collapse div
+
                 </div>
+                
+                <div id="exam1" class="collapse show">
 
-            -->
+                    <form id="questionform" action="{% url 'onlinecourse:submit' course.id %}" method="post">
+                        {% for question in course.question_set.all %}
+                        <div class="card mt-1">
+                            <div class="card-header"><h5>{{ question.question_text}}</h5></div>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                {% for choice in question.choice_set.all %}
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" name="choice_{{choice.id}}"
+                                               class="form-check-input" id="{{choice.id}}"
+                                               value="{{choice.id}}">{{ choice.choice_content }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    <input class="btn btn-success btn-block" type="submit" value="Submit">
+                    </form>
+
+                </div>
+              </div>
+              {% endif %}
+             
+            
+           
+            
+           
 
             <!-- <HINT> If user is authenticated, show course exam with a list of question -->
 

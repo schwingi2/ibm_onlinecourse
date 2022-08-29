@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 # <HINT> Import any new Models here
-from .models import Course, Enrollment
+from .models import Course, Enrollment, Question, Choice, Submission
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -10,6 +10,7 @@ from django.contrib.auth import login, logout, authenticate
 import logging
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+logger.info("Houston, we have a %s", "interesting problem", exc_info=1)
 # Create your views here.
 
 
@@ -110,8 +111,22 @@ def enroll(request, course_id):
          # Collect the selected choices from exam form
          # Add each selected choice object to the submission object
          # Redirect to show_exam_result with the submission id
-#def submit(request, course_id):
-
+def submit(request, course_id):
+    user = request.user
+    course = get_object_or_404(Course, pk=course_id)
+    enrollment = get_object_or_404(Enrollment.objects.filter(user=user, course=course))
+    submission = Submission.objects.create(enrollment=enrollment)
+    
+    submitted_answers = [] # currently not in use
+    for key in request.POST:
+        if key.startswith('choice'):
+            value = request.POST[key]
+            choice_id = int(value)
+            this_choice=Choice.objects.get(pk=choice_id)
+            submitted_answers.append(choice_id) # currently not in use
+            submission.choices.add(this_choice) #= choice_id # add each collected choice object to the submission object 
+    #return submitted_answers
+    return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', args=(course.id, submission.id)))
 
 # <HINT> A example method to collect the selected choices from the exam form from the request object
 #def extract_answers(request):
@@ -130,7 +145,73 @@ def enroll(request, course_id):
         # Get the selected choice ids from the submission record
         # For each selected choice, check if it is a correct answer or not
         # Calculate the total score
-#def show_exam_result(request, course_id, submission_id):
+
+def merge_two_dicts(x, y):
+    z = x.copy()   # start with keys and values of x
+    z.update(y)    # modifies z with keys and values of y
+    return z
+
+def show_exam_result(request,course_id, submission_id):
+    my_answers  = []
+    my_questions = []
+    question_choices= Choice.objects.none() #initialize empty choice-set...
+    question_choices_all = Choice.objects.none() # initialize empty choice-set
+    submission_choices= Choice.objects.none() #initialize empty choice-set...
+    right_answers = []
+    score = 0
+    counter = 0
+    grade = 0
+    context = {}
+    context['submission_id'] = submission_id
+    context['course_id'] = course_id  
+    context['message'] = "This is a test view for Exam results of course{}".format(course_id)
+    
+    course_questions = Question.objects.filter(course__id = course_id)
+    
+    context['questions'] = course_questions.values()
+
+    for questions in course_questions:
+        question_choices = question_choices.union(Choice.objects.filter(question__id = questions.id, correct = True))
+        question_choices_all = question_choices_all.union(Choice.objects.filter(question__id = questions.id))
+        submission_choices = submission_choices.union(Choice.objects.filter(question__id = questions.id, submission__id = submission_id))
+
+        counter +=1
+        if list(question_choices.values()) == list(submission_choices.values()): # create two dictionaries via values out of object queryset
+            score +=1
+    
+    question_choices = question_choices.values()  # generate dictionary for context via values()
+    answer_ids = submission_choices.values_list('id')
+    submission_choices = submission_choices.values()
+    
+    grade = score/counter
+   
+    # submission_choices = Choice.objects.filter(submission__id = submission_id)
+    # for my_choices in submission_choices:
+    #     my_answers.append(my_choices.id)
+    # 
+
+    # #logger.info("Houston, we have a %s", "interesting problem", exc_info=1)
+    # course_questions = Question.objects.filter(course__id = course_id)
+    # for questions in course_questions:
+    #     my_questions.append(questions.id)
+    #     question_choices = Choice.objects.filter(question__id = questions.id)
+    #     for right_choices in question_choices:
+    #         if right_choices.correct == True:
+    #             right_answers.append(right_choices.id)
+    #     if right_answers in my_answers:
+    #         score +=1
+
+    context['score'] = score         
+    context['solutions'] = question_choices
+    context['answers'] = submission_choices
+    context['all_choices'] = question_choices_all.values()
+    context['grade'] = round((grade*100))
+    context['my_answer_ids'] = answer_ids
+   
+
+   
+    #return render(request, 'onlinecourse/user_registration_bootstrap.html', context)
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
 
 
 

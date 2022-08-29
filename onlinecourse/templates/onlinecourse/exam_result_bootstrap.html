@@ -36,20 +36,64 @@
 </nav>
 
 <div class="container-fluid">
+    
     {% if grade > 80 %}
     <div class="alert alert-success">
-       <!--HINT Display passed info -->
+       <strong>Congratulation {{user.username}}!</strong> You have passed the exam and completed the course with score {{grade}}/ 100 <!--HINT Display passed info -->
     </div>
         {% else %}
         <div class="alert alert-danger">
-            <!--HINT Display failed info -->
+           <strong>Failed</strong> Sorry {{user.username}}! You have failed the exam with {{grade}} / 100 <!--HINT Display failed info -->
         </div>
-        <a class="btn btn-link text-danger" href="{% url 'onlinecourse:course_details' course.id %}">Re-test</a>
+        <a class="btn btn-link text-danger" href="{% url 'onlinecourse:course_details' course_id %}">Re-test</a>
         {% endif %}
-        <div class="card-columns-vertical mt-1">
+        <div class="card border-columns-vertical mt-1">
         <h5 class="">Exam results</h5>
             <!--HINT Display exam results-->
+        
+        
+        {%for question in questions%}
+        <div class="card-header"><h5>{{question.question_text}}</h5></div>
+        <div class="card-body">
+        {%for q_choice in all_choices%}
+            {%if q_choice.question_id == question.id%}
+                {%if q_choice.correct == True%}   <!--it's a right choice-->                
+                    {%if q_choice in answers%}   <!--choice is selected-->
+                    <p class="text-success"> Correct answer: {{q_choice.choice_content}} </p>
+                    {%else%}
+                    <p class="text-warning"> Not selected: {{q_choice.choice_content}} </p>
+                    {%endif%}
+                {%elif q_choice in answers%}
+                    <p class="text-danger"> Wrong answer selected: {{q_choice.choice_content}} </p>
+                {%else%}
+                <p class="text-dark"> {{q_choice.choice_content}} </p>
+                {%endif%}
+            {%endif%}
+        {%endfor%} 
         </div>
+        {%endfor%}
+    </div>
+        
+               
+            
+        
+
+        <div class="alert alert-success"> Passed successfully submission id: {{submission_id}} from context.<br>
+            Passed successfully course id: {{course_id}} from context. <br>
+            Passed successfully message: {{message}}. <br>
+            This is a list of chosen answers: {{answers}} <br>
+            This is a list of course questions: {{questions}} <br>
+            This as a list of right solutions: {{solutions}} <br>
+            This is a list of all choices: {{all_choices}} <br>
+            This is a current score: {{score}} <br>
+            This is your current grade: {{grade}} % <br>
+            This is answer ids: {{my_answer_ids}}<br>
+            
+            
+           
+        </div>
+
+
     </div>
 </body>
 </html>
